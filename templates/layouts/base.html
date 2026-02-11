@@ -29,6 +29,13 @@
         position: static;
         z-index: 9999;
         }
+    /* Prevent scrolling past the top across the site */
+    html, body {
+        overscroll-behavior-y: none; /* Disable rubber-band/overscroll */
+        overscroll-behavior: contain; /* Contain scroll chaining */
+    }
+    /* Optional: avoid unexpected anchor jumps affecting scroll position */
+    body { overflow-anchor: none; }
     {% block style %}
 
     {% endblock %}

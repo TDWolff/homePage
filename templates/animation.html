@@ -2,31 +2,101 @@
 {% set project = "animation" %}
 
 {% block body %}
-<div class="container d-flex flex-column align-items-center justify-content-center" style="min-height: 70vh;">
-    <div class="construction-animation mb-4">
-        <i class="bi bi-film text-danger" style="font-size: 5rem; animation: bounce 2s infinite;"></i>
-        <i class="bi bi-camera-reels text-dark" style="font-size: 4rem; animation: spin 4s infinite linear; margin-left: 10px;"></i>
+<div class="container text-center">
+    <!-- Hero -->
+    <div class="projects-hero">
+        <h1>Demo Reel</h1>
+        <p>A single showcase video rendered as part of the animation portfolio.</p>
     </div>
-    
-    <h1 class="display-4 fw-bold mb-3">Rendering in Progress... 🎬</h1>
-    <p class="lead text-muted text-center max-w-md">
-        Our render farm is heating up to bring you these animations.<br>
-        Grab some popcorn and come back later!
-    </p>
-    
-    <a href="/" class="btn btn-outline-primary mt-4 rounded-pill px-4">
-        <i class="bi bi-arrow-left"></i> Back to the Lobby
-    </a>
 
-    <style>
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-20px);}
-            60% {transform: translateY(-10px);}
-        }
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <!-- Single Embedded Video -->
+    <div class="mb-5">
+        <div class="video-wrapper shadow-lg rounded" style="background: black; min-height: 60vh; display: flex; align-items: center; justify-content: center;">
+            <video id="mainVideo" class="w-100 rounded" controls poster="" style="max-height: 70vh; object-fit: contain;">
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <h3 id="videoTitle" class="mt-3 text-primary"></h3>
+        <p id="videoDesc" class="text-muted"></p>
+    </div>
 </div>
+
+<style>
+    /* Reuse consistent styling */
+    .video-wrapper {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Mobile Adjustments */
+    @media (max-width: 768px) {
+        .video-wrapper {
+            margin: 0 -15px; /* Edge-to-edge on mobile */
+            border-radius: 0 !important;
+        }
+    }
+</style>
+
+<script>
+    {% set base_video_url = "https://raw.githubusercontent.com/TDWolff/DataStorage/main/videos/" %}
+    {% set video = {"file": "demorelRender.mp4", "title": "Demo Reel", "desc": "A rendered compilation showcasing animation highlights."} %}
+
+    const videoSrc = "{{ base_video_url }}{{ video.file }}";
+    const videoTitle = "{{ video.title }}";
+    const videoDesc = "{{ video.desc }}";
+
+    const videoElement = document.getElementById('mainVideo');
+    const titleElement = document.getElementById('videoTitle');
+    const descElement = document.getElementById('videoDesc');
+
+    function loadVideo() {
+        // Update Video
+    console.log('[Animation] Setting video src:', videoSrc);
+    videoElement.src = videoSrc;
+        videoElement.load();
+    console.log('[Animation] Called video.load()');
+
+        // Auto-play video (may be blocked by browser until user interacts)
+        const playPromise = videoElement.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+        console.log('[Animation] Auto-play prevented (user interaction required):', error);
+            });
+        }
+
+        // Update Text
+        titleElement.textContent = videoTitle;
+        descElement.textContent = videoDesc;
+    }
+
+    // Initialize video
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('[Animation] DOMContentLoaded');
+        loadVideo();
+    });
+
+    // Media event listeners for debugging
+    videoElement.addEventListener('loadedmetadata', () => {
+        console.log('[Animation] loadedmetadata:', { duration: videoElement.duration, videoWidth: videoElement.videoWidth, videoHeight: videoElement.videoHeight });
+    });
+    videoElement.addEventListener('canplay', () => {
+        console.log('[Animation] canplay');
+    });
+    videoElement.addEventListener('play', () => {
+        console.log('[Animation] play');
+    });
+    videoElement.addEventListener('playing', () => {
+        console.log('[Animation] playing');
+    });
+    videoElement.addEventListener('pause', () => {
+        console.log('[Animation] pause');
+    });
+    videoElement.addEventListener('ended', () => {
+        console.log('[Animation] ended');
+    });
+    videoElement.addEventListener('error', (e) => {
+        const err = videoElement.error;
+        console.log('[Animation] error:', err ? { code: err.code, message: err.message } : e);
+    });
+</script>
 {% endblock %}
