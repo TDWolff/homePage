@@ -11,9 +11,27 @@ import dotenv
 from flask_caching import Cache
 import redis
 
+
 from __init__ import app, cors
 
+
 dotenv.load_dotenv()
+
+# Environment-based API domain selection
+LOCAL_API_URL = os.environ.get("LOCAL_API_URL", "http://127.0.0.1:5000")
+PROD_API_URL = os.environ.get("PROD_API_URL", "https://your-secret-domain.com")
+FLASK_ENV = os.environ.get("FLASK_ENV", "production")
+
+if FLASK_ENV == "development":
+    API_URL = LOCAL_API_URL
+else:
+    API_URL = PROD_API_URL
+
+
+# Global context processor to inject API_URL into all templates
+@app.context_processor
+def inject_api_url():
+    return dict(API_URL=API_URL)
 
 # Enable gzip compression - reduces bandwidth by 70-80%
 Compress(app)
@@ -190,6 +208,10 @@ def log_suspicious_requests():
 @cache.cached(timeout=3600)
 def index():
     return render_template("index.html")
+
+@app.route('/login')
+def login():
+    return render_template("login.html", API_URL=API_URL)
 
 @app.route('/about')
 @cache.cached(timeout=3600)

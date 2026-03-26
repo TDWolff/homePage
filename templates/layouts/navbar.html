@@ -188,14 +188,126 @@
             <a href="{{ url_for('blender') }}" class="navbar-link">Blender</a>
             <a href="{{ url_for('blogs') }}" class="navbar-link">Blogs</a>
             <a href="{{ url_for('officialresume') }}" class="navbar-link">Resume</a>
+            <!-- Dynamic Login/Profile button with dropdown -->
+            <div style="position:relative;display:inline-block;">
+                <a href="/login" class="navbar-link" id="loginProfileBtn" style="display:none"></a>
+                <div id="profileDropdown" class="profile-dropdown" style="display:none;position:absolute;top:100%;right:0;min-width:140px;background:#fff;border:1px solid #d6eaff;border-radius:8px;box-shadow:0 2px 8px rgba(0,85,170,0.07);z-index:2000;">
+                    <a href="/profile" class="dropdown-item" style="display:block;padding:10px 18px;color:#004080;text-decoration:none;">Profile</a>
+                    <button id="logoutBtn" class="dropdown-item" style="display:block;width:100%;text-align:left;padding:10px 18px;background:none;border:none;color:#d9534f;cursor:pointer;">Logout</button>
+                </div>
+            </div>
         </div>
     </nav>
 
     <script>
+    // API_URL is injected by Flask into the template context
+    if (typeof API_URL === 'undefined') {
+        var API_URL = "{{ API_URL if API_URL is defined else '' }}";
+    }
         const hamburger = document.getElementById('hamburger');
         const navbarLinks = document.getElementById('navbarLinks');
         const overlay = document.getElementById('overlay');
         const links = document.querySelectorAll('.navbar-link');
+
+        // Dynamic Login/Profile button logic
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+        function updateLoginProfileBtn() {
+            const btn = document.getElementById('loginProfileBtn');
+            const dropdown = document.getElementById('profileDropdown');
+            const loggedIn = getCookie('loggedIn');
+            if (loggedIn === 'true') {
+                btn.textContent = 'Profile';
+                btn.href = '#';
+                btn.setAttribute('aria-haspopup', 'true');
+                btn.setAttribute('aria-expanded', 'false');
+                btn.style.display = 'inline-block';
+                dropdown.style.display = 'none';
+                dropdown.style.visibility = 'visible';
+            } else {
+                btn.textContent = 'Login';
+                btn.href = '/login';
+                btn.removeAttribute('aria-haspopup');
+                btn.removeAttribute('aria-expanded');
+                btn.style.display = 'inline-block';
+                dropdown.style.display = 'none';
+                dropdown.style.visibility = 'hidden';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', updateLoginProfileBtn);
+
+        // Dropdown logic
+        const btn = document.getElementById('loginProfileBtn');
+        const dropdown = document.getElementById('profileDropdown');
+        let dropdownOpen = false;
+        function showDropdown() {
+            dropdown.style.display = 'block';
+            btn.setAttribute('aria-expanded', 'true');
+            dropdownOpen = true;
+        }
+        function hideDropdown() {
+            dropdown.style.display = 'none';
+            btn.setAttribute('aria-expanded', 'false');
+            dropdownOpen = false;
+        }
+        btn.addEventListener('click', function(e) {
+            if (btn.textContent === 'Profile') {
+                e.preventDefault();
+                if (dropdownOpen) {
+                    hideDropdown();
+                } else {
+                    showDropdown();
+                }
+            } else if (btn.textContent === 'Login') {
+                // Go to login page
+                window.location.href = '/login';
+            }
+        });
+        // Show dropdown on mouse enter, hide on mouse leave (only if logged in)
+        btn.addEventListener('mouseenter', function(e) {
+            if (btn.textContent === 'Profile') showDropdown();
+        });
+        btn.addEventListener('mouseleave', function(e) {
+            setTimeout(() => {
+                if (btn.textContent === 'Profile' && !dropdown.matches(':hover') && !btn.matches(':hover')) {
+                    hideDropdown();
+                }
+            }, 120);
+        });
+        dropdown.addEventListener('mouseenter', function(e) {
+            if (btn.textContent === 'Profile') showDropdown();
+        });
+        dropdown.addEventListener('mouseleave', function(e) {
+            if (btn.textContent === 'Profile') hideDropdown();
+        });
+
+                // Hide dropdown on click outside
+                document.addEventListener('click', function(e) {
+                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                        hideDropdown();
+                    }
+                });
+
+                // Hide dropdown on nav link click (mobile)
+
+        Array.from(document.getElementsByClassName('navbar-link')).forEach(link => {
+            link.addEventListener('click', hideDropdown);
+        });
+
+        // Logout logic
+        document.getElementById('logoutBtn').addEventListener('click', async function(e) {
+            e.preventDefault();
+            try {
+                await fetch(`${API_URL}/logout`, { method: 'POST', credentials: 'include' });
+            } catch {}
+            // Remove loggedIn cookie immediately for UI
+            document.cookie = 'loggedIn=false; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            updateLoginProfileBtn();
+            hideDropdown();
+        });
 
         function toggleMenu() {
             hamburger.classList.toggle('active');
