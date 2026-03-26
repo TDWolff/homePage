@@ -243,6 +243,11 @@ def emuseum():
 def moreaboutme():
     return render_template("moreaboutme.html")
 
+
+@app.route('/profile')
+def profile():
+    return render_template("profile.html")
+
 @app.route('/resume')
 @cache.cached(timeout=3600)
 def officialresume():

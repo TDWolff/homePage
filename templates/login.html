@@ -115,6 +115,7 @@
                 function callUpdateLoginProfileBtn() {
                     if (typeof updateLoginProfileBtn === 'function') {
                         updateLoginProfileBtn();
+                        window.location.href = '/profile';
                     } else {
                         setTimeout(callUpdateLoginProfileBtn, 50);
                     }

@@ -1,0 +1,178 @@
+{% extends "layouts/base.html" %}
+{% set project = "Profile" %}
+
+{% block body %}
+<style>
+    .profile-card {
+        background: linear-gradient(135deg, #e0f0ff 0%, #f8fbff 100%);
+        border: 1px solid #d6eaff;
+        border-radius: 18px;
+        box-shadow: 0 4px 18px rgba(0,85,170,0.08);
+        max-width: 420px;
+        margin: 3rem auto 0 auto;
+        padding: 2.5rem 2.2rem 2rem 2.2rem;
+        text-align: center;
+        position: relative;
+    }
+    .profile-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #b5d6f7;
+        margin-bottom: 1.2rem;
+        background: #e6f2ff;
+        display: inline-block;
+    }
+    .profile-username {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #0055aa;
+        margin-bottom: 0.2rem;
+    }
+    .profile-role {
+        color: #217dbb;
+        font-size: 1.05rem;
+        margin-bottom: 1.2rem;
+    }
+    .profile-divider {
+        border: none;
+        border-top: 1.5px solid #d6eaff;
+        margin: 1.5rem 0 1.2rem 0;
+    }
+    .profile-actions {
+        margin-top: 1.5rem;
+    }
+    .profile-actions .btn {
+        min-width: 120px;
+        font-size: 1.08rem;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.7rem 0;
+    }
+    #profileError {
+        color: #d9534f;
+        margin-top: 1.2rem;
+    }
+</style>
+<div class="container">
+    <div class="profile-card">
+        <div id="profileLoading">
+            <img src="/static/assets/twcom.png" alt="Profile" class="profile-avatar" style="opacity:0.5;">
+            <div style="margin-top:0.7rem; color:#888;">Loading profile...</div>
+        </div>
+        <div id="profileDetails" style="display:none;">
+            <img src="/static/assets/twcom.png" alt="Profile" class="profile-avatar">
+            <div class="profile-username" id="profileUsername"></div>
+            <div class="profile-role">Member</div>
+            <hr class="profile-divider">
+            <form id="changePasswordForm" style="text-align:left;max-width:320px;margin:0 auto;">
+                <div style="margin-bottom:1rem;">
+                    <label for="old_password" style="font-weight:500;">Current Password</label>
+                    <input type="password" id="old_password" name="old_password" class="form-control" required style="margin-top:0.3rem;">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label for="new_password" style="font-weight:500;">New Password</label>
+                    <input type="password" id="new_password" name="new_password" class="form-control" required style="margin-top:0.3rem;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-bottom:0.7rem;">Change Password</button>
+                <div id="changePasswordMsg" style="margin-top:0.5rem;font-size:0.98rem;"></div>
+            </form>
+            <div class="profile-actions">
+                <button id="logoutBtnProfile" class="btn btn-danger">Logout</button>
+            </div>
+        </div>
+        <div id="profileError" style="display:none;"></div>
+    </div>
+</div>
+<script>
+// API_URL is injected globally
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+async function loadProfile() {
+    // Redirect if not logged in
+    if (getCookie('loggedIn') !== 'true') {
+        window.location.href = '/login';
+        return;
+    }
+    const loading = document.getElementById('profileLoading');
+    const details = document.getElementById('profileDetails');
+    const error = document.getElementById('profileError');
+    loading.style.display = '';
+    details.style.display = 'none';
+    error.style.display = 'none';
+    try {
+        const resp = await fetch(`${API_URL}/profile`, { credentials: 'include' });
+        if (resp.status === 200) {
+            const data = await resp.json();
+            document.getElementById('profileUsername').textContent = data.username || 'Unknown User';
+            loading.style.display = 'none';
+            details.style.display = '';
+        } else if (resp.status === 401) {
+            loading.style.display = 'none';
+            error.textContent = 'You must be logged in to view your profile.';
+            error.style.display = '';
+        } else {
+            loading.style.display = 'none';
+            error.textContent = 'Failed to load profile.';
+            error.style.display = '';
+        }
+    } catch (e) {
+        loading.style.display = 'none';
+        error.textContent = 'Network error.';
+        error.style.display = '';
+    }
+}
+document.addEventListener('DOMContentLoaded', loadProfile);
+// Logout button on profile page
+const logoutBtnProfile = document.getElementById('logoutBtnProfile');
+if (logoutBtnProfile) {
+    logoutBtnProfile.addEventListener('click', async function(e) {
+        e.preventDefault();
+        try {
+            await fetch(`${API_URL}/logout`, { method: 'POST', credentials: 'include' });
+        } catch {}
+        document.cookie = 'loggedIn=false; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        window.location.href = '/login';
+    });
+}
+
+// Change password form logic
+const changePasswordForm = document.getElementById('changePasswordForm');
+if (changePasswordForm) {
+    changePasswordForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const old_password = document.getElementById('old_password').value;
+        const new_password = document.getElementById('new_password').value;
+        const msg = document.getElementById('changePasswordMsg');
+        msg.textContent = '';
+        msg.style.color = '#0055aa';
+        try {
+            const resp = await fetch(`${API_URL}/change-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ old_password, new_password }),
+                credentials: 'include'
+            });
+            let data = null;
+            try { data = await resp.json(); } catch {}
+            if (resp.status === 200) {
+                msg.textContent = (data && data.message) ? data.message : 'Password changed successfully!';
+                msg.style.color = '#28a745';
+                changePasswordForm.reset();
+            } else {
+                msg.textContent = (data && (data.error || data.message)) ? (data.error || data.message) : 'Failed to change password.';
+                msg.style.color = '#d9534f';
+            }
+        } catch (err) {
+            msg.textContent = 'Network error.';
+            msg.style.color = '#d9534f';
+        }
+    });
+}
+</script>
+{% endblock %}
